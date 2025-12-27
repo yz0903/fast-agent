@@ -1,5 +1,6 @@
 import os
 
+from fast_agent.llm.model_database import ModelDatabase
 from fast_agent.llm.provider.openai.llm_openai import OpenAILLM
 from fast_agent.llm.provider_types import Provider
 from fast_agent.types import RequestParams
@@ -17,12 +18,17 @@ class GenericLLM(OpenAILLM):
     def _initialize_default_params(self, kwargs: dict) -> RequestParams:
         """Initialize Generic  parameters"""
         chosen_model = kwargs.get("model", DEFAULT_OLLAMA_MODEL)
+        # Get model-aware max tokens, default to 8192 for Ollama models
+        max_tokens = ModelDatabase.get_default_max_tokens(chosen_model) if chosen_model else 8192
+        if max_tokens == 2048:  # If it's the fallback value, use a higher default for Ollama
+            max_tokens = 8192
 
         return RequestParams(
             model=chosen_model,
             systemPrompt=self.instruction,
             parallel_tool_calls=True,
             max_iterations=10,
+            maxTokens=max_tokens,
             use_history=True,
         )
 
