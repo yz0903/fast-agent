@@ -1,5 +1,5 @@
 import json
-from typing import Any, Union
+from typing import Any, Union, cast
 
 from mcp.types import (
     CallToolResult,
@@ -114,7 +114,27 @@ class OpenAIConverter:
                     )
                 )
 
-            return [ChatCompletionAssistantMessageParam(role="assistant", tool_calls=tool_calls_list, content="")]
+            # Some API servers (e.g., DeepSeek R1) require content to be present and non-empty
+            # when tool_calls exist. Use actual content if available, otherwise use a placeholder.
+            message_dict: dict[str, Any] = {
+                "role": "assistant",
+                "tool_calls": tool_calls_list,
+            }
+            # Include content if there's actual content to include
+            if multipart_msg.content:
+                content_msg = OpenAIConverter._convert_content_to_message(
+                    multipart_msg.content, "assistant", concatenate_text_blocks
+                )
+                if content_msg and content_msg.get("content"):
+                    message_dict["content"] = content_msg["content"]
+                else:
+                    # No valid content, use placeholder for APIs that require non-empty content
+                    message_dict["content"] = " "
+            else:
+                # No content available, use placeholder for APIs that require non-empty content
+                message_dict["content"] = " "
+
+            return [cast("ChatCompletionAssistantMessageParam", message_dict)]
 
         # Handle tool_results first if present
         if multipart_msg.tool_results:
@@ -443,7 +463,10 @@ class OpenAIConverter:
         tool_result: CallToolResult,
         tool_call_id: str,
         concatenate_text_blocks: bool = False,
-    ) -> Union[ChatCompletionMessageParam, tuple[ChatCompletionMessageParam, list[ChatCompletionMessageParam]]]:
+    ) -> Union[
+        ChatCompletionMessageParam,
+        tuple[ChatCompletionMessageParam, list[ChatCompletionMessageParam]],
+    ]:
         """
         Convert a CallToolResult to an OpenAI tool message.
 
