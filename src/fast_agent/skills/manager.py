@@ -129,7 +129,9 @@ class MarketplaceEntryModel(BaseModel):
         }
 
     @classmethod
-    def from_entry(cls, entry: dict[str, Any], *, source_url: str | None = None) -> "MarketplaceEntryModel":
+    def from_entry(
+        cls, entry: dict[str, Any], *, source_url: str | None = None
+    ) -> "MarketplaceEntryModel":
         model = cls.model_validate(entry)
         if source_url and not model.source_url:
             return model.model_copy(update={"source_url": source_url})
@@ -160,9 +162,7 @@ class MarketplacePayloadModel(BaseModel):
         return {"entries": entries}
 
 
-def get_manager_directory(
-    settings: Settings | None = None, *, cwd: Path | None = None
-) -> Path:
+def get_manager_directory(settings: Settings | None = None, *, cwd: Path | None = None) -> Path:
     """Resolve the local skills directory the manager operates on."""
     base = cwd or Path.cwd()
     resolved_settings = settings or get_settings()
@@ -367,9 +367,7 @@ def _candidate_marketplace_urls(url: str) -> list[str]:
                 suffix = ".claude-plugin/marketplace.json"
                 if base_path:
                     suffix = f"{base_path.rstrip('/')}/{suffix}"
-                return [
-                    f"https://raw.githubusercontent.com/{org}/{repo}/{ref}/{suffix}"
-                ]
+                return [f"https://raw.githubusercontent.com/{org}/{repo}/{ref}/{suffix}"]
             if len(parts) == 2:
                 return [
                     f"https://raw.githubusercontent.com/{org}/{repo}/main/.claude-plugin/marketplace.json",
@@ -647,9 +645,7 @@ def _install_marketplace_skill_sync(skill: MarketplaceSkill, destination_root: P
         source_dir = _resolve_repo_subdir(local_repo, skill.repo_subdir)
         source_dir = _resolve_skill_source_dir(source_dir, skill.name)
         if not source_dir.exists():
-            raise FileNotFoundError(
-                f"Skill path not found in repository: {skill.repo_subdir}"
-            )
+            raise FileNotFoundError(f"Skill path not found in repository: {skill.repo_subdir}")
         _copy_skill_source(source_dir, install_dir)
         return install_dir
 
@@ -661,22 +657,21 @@ def _install_marketplace_skill_sync(skill: MarketplaceSkill, destination_root: P
             "--depth",
             "1",
             "--filter=blob:none",
-            "--sparse",
         ]
         if skill.repo_ref:
             clone_args.extend(["--branch", skill.repo_ref])
         clone_args.extend([skill.repo_url, str(tmp_path)])
 
         _run_git(clone_args)
+        # Initialize sparse-checkout after clone (workaround for Git < 2.26.0 bug with --sparse)
+        _run_git(["git", "-C", str(tmp_path), "sparse-checkout", "init", "--cone"])
         _run_git(["git", "-C", str(tmp_path), "sparse-checkout", "set", skill.repo_subdir])
         _run_git(["git", "-C", str(tmp_path), "checkout"])
 
         source_dir = _resolve_repo_subdir(tmp_path, skill.repo_subdir)
         source_dir = _resolve_skill_source_dir(source_dir, skill.name)
         if not source_dir.exists():
-            raise FileNotFoundError(
-                f"Skill path not found in repository: {skill.repo_subdir}"
-            )
+            raise FileNotFoundError(f"Skill path not found in repository: {skill.repo_subdir}")
 
         _copy_skill_source(source_dir, install_dir)
 
