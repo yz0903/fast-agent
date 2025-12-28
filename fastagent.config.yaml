@@ -10,15 +10,15 @@
 # If not specified, defaults to "gpt-5-mini.low".
 # Can be overriden with a command line switch --model=<model>, or within the Agent constructor.
 
-default_model: generic.qwen3-vl:4b
+default_model: generic.silicon:deepseek-ai/DeepSeek-R1
 # mcp-ui support: disabled, enabled or auto. "auto" opens the web browser on the asset automatically
 # mcp_ui_output_dir: ".fast-agent/ui"  # Where to write MCP-UI HTML files (relative to CWD if not absolute)
 # mcp_ui_mode: enabled
 
 # Generic/Ollama Provider Configuration
 generic:
-  base_url: "http://172.24.96.1:11434/v1"
-  api_key: "ollama"
+  base_url: "http://localhost:23333/v1"
+  api_key: "cs-sk-6f9287af-1832-483c-8438-bb4a2b225709"
 
 # otel:
 #   enabled: true
